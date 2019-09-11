@@ -1,0 +1,66 @@
+const gulp = require('gulp');
+const sass = require('gulp-sass');
+const concat = require('gulp-concat');
+const uglify = require('gulp-uglify');
+const imagemin = require('gulp-imagemin');
+const cssnano = require('gulp-cssnano');
+const autoprefixer = require('gulp-autoprefixer');
+const babel = require('gulp-babel');
+const browserSync = require('browser-sync');
+
+const sync = true;
+const styleSource = 'src/scss/style.scss';
+const imageSource = 'src/assets/**';
+const scriptSource = 'src/js/*.js';
+
+const stylePath = 'dist/css';
+const imagePath = 'dist/assets';
+const scriptPath = 'dist/js';
+
+gulp.task('browser-sync', ['styles', 'scripts'], () => {
+  browserSync.init({ proxy: 'www.dev.test' });
+  gulp.watch('src/scss/**', ['styles']);
+  gulp.watch('src/js/**', ['scripts']);
+  gulp.watch('src/assets/**', ['assets']);
+  gulp.watch('*.php').on('change', browserSync.reload);
+});
+
+gulp.task('styles', () => {
+  gulp
+    .src(styleSource)
+    .pipe(sass())
+    .pipe(
+      autoprefixer({
+        overrideBrowserslist: ['last 4 versions'],
+        cascade: true,
+      }),
+    )
+    .pipe(cssnano())
+    .pipe(gulp.dest(stylePath))
+    .pipe(browserSync.stream());
+});
+
+gulp.task('assets', () => {
+  gulp
+    .src(imageSource)
+    .pipe(imagemin({ verbose: true }))
+    .pipe(gulp.dest(imagePath));
+});
+
+gulp.task('scripts', () => {
+  gulp.src(scriptSource)
+    .pipe(concat('index.js'))
+    .pipe(babel({ presets: ['babel-preset-es2015'] }))
+    .pipe(uglify({ mangle: false }))
+    .pipe(gulp.dest(scriptPath));
+
+  if (sync) browserSync.reload();
+});
+
+gulp.task('watch', () => {
+  gulp.watch('src/scss/**', ['styles']);
+  gulp.watch('src/assets/*', ['assets']);
+  gulp.watch('src/js/*.js', ['scripts']);
+});
+
+gulp.task('default', ['styles', 'assets', 'scripts']);
